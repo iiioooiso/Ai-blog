@@ -2,30 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 
-//  Correct — inline the type for params directly
+//  Fix: Use `any` for context to avoid Next.js 15 type validation error
+export async function GET(request: NextRequest, context: any) {
+  const { params } = context;
 
-//  GET: Fetch a single blog post by ID
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
   try {
     const blogPost = await prisma.blogPost.findUnique({
       where: { id: params.id },
       include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+        author: { select: { id: true, name: true, email: true } },
       },
     });
 
-    if (!blogPost) {
+    if (!blogPost)
       return NextResponse.json({ error: 'Blog post not found' }, { status: 404 });
-    }
 
     return NextResponse.json(blogPost);
   } catch (error) {
@@ -34,32 +24,27 @@ export async function GET(
   }
 }
 
-//  PUT: Update an existing blog post
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, context: any) {
+  const { params } = context;
+
   try {
     const supabase = createClient();
     const {
       data: { user },
     } = await (await supabase).auth.getUser();
 
-    if (!user) {
+    if (!user)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const blogPost = await prisma.blogPost.findUnique({
       where: { id: params.id },
     });
 
-    if (!blogPost) {
+    if (!blogPost)
       return NextResponse.json({ error: 'Blog post not found' }, { status: 404 });
-    }
 
-    if (blogPost.authorId !== user.id) {
+    if (blogPost.authorId !== user.id)
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const { title, content } = await request.json();
 
@@ -67,9 +52,7 @@ export async function PUT(
       where: { id: params.id },
       data: { title, content },
       include: {
-        author: {
-          select: { id: true, name: true, email: true },
-        },
+        author: { select: { id: true, name: true, email: true } },
       },
     });
 
@@ -79,32 +62,28 @@ export async function PUT(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-//  DELETE: Delete a blog post
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+
+export async function DELETE(request: NextRequest, context: any) {
+  const { params } = context;
+
   try {
     const supabase = createClient();
     const {
       data: { user },
     } = await (await supabase).auth.getUser();
 
-    if (!user) {
+    if (!user)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const blogPost = await prisma.blogPost.findUnique({
       where: { id: params.id },
     });
 
-    if (!blogPost) {
+    if (!blogPost)
       return NextResponse.json({ error: 'Blog post not found' }, { status: 404 });
-    }
 
-    if (blogPost.authorId !== user.id) {
+    if (blogPost.authorId !== user.id)
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     await prisma.blogPost.delete({
       where: { id: params.id },
