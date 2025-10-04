@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+//  Define the proper RouteContext type for dynamic routes
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
+
+//  GET: Fetch a single blog post by ID
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
     const blogPost = await prisma.blogPost.findUnique({
       where: { id: params.id },
@@ -27,22 +32,17 @@ export async function GET(
     return NextResponse.json(blogPost);
   } catch (error) {
     console.error('Error fetching blog post:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+//  PUT: Update an existing blog post (requires user to be the author)
+export async function PUT(request: NextRequest, { params }: RouteContext) {
   try {
-    const supabase = createServerClient();
+    const supabase = createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await (await supabase).auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -82,22 +82,17 @@ export async function PUT(
     return NextResponse.json(updatedPost);
   } catch (error) {
     console.error('Error updating blog post:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+//  DELETE: Delete a blog post (requires user to be the author)
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
   try {
-    const supabase = createServerClient();
+    const supabase = createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await (await supabase).auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -122,9 +117,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Blog post deleted successfully' });
   } catch (error) {
     console.error('Error deleting blog post:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
