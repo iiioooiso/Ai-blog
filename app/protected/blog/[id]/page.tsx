@@ -6,7 +6,7 @@ import { LikeButton } from "@/components/LikeButton";
 import { createClient } from "@/lib/supabase/server";
 
 interface BlogPostPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>; 
 }
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const resolvedParams = await params;
