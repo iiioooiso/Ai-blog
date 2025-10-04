@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 
-//  Define the proper RouteContext type for dynamic routes
-type RouteContext = {
-  params: {
-    id: string;
-  };
-};
+//  Correct — inline the type for params directly
 
 //  GET: Fetch a single blog post by ID
-export async function GET(request: NextRequest, { params }: RouteContext) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const blogPost = await prisma.blogPost.findUnique({
       where: { id: params.id },
@@ -36,8 +34,11 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   }
 }
 
-//  PUT: Update an existing blog post (requires user to be the author)
-export async function PUT(request: NextRequest, { params }: RouteContext) {
+//  PUT: Update an existing blog post
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const supabase = createClient();
     const {
@@ -64,17 +65,10 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 
     const updatedPost = await prisma.blogPost.update({
       where: { id: params.id },
-      data: {
-        title,
-        content,
-      },
+      data: { title, content },
       include: {
         author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: { id: true, name: true, email: true },
         },
       },
     });
@@ -85,9 +79,11 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
-//  DELETE: Delete a blog post (requires user to be the author)
-export async function DELETE(request: NextRequest, { params }: RouteContext) {
+//  DELETE: Delete a blog post
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const supabase = createClient();
     const {
